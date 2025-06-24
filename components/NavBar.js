@@ -22,6 +22,7 @@ export default function NavBar() {
           <Link href="/todo" className={linkStyle('/todo')}>
             To-Do
           </Link>
+          {/* Create new link or page here... */}
         </div>
       </div>
     </nav>

@@ -1,31 +1,34 @@
 import { useState, useEffect } from "react";
 import TodoCategory from "@/components/TodoCategory";
 import NavBar from "../components/NavBar";
+import FloatingLottie from "@/components/FloatingLottie";
 
 export default function TodoPage() {
   const STORAGE_KEY = "todo_categories_with_tasks";
+  const DARK_MODE_KEY = "dark_mode_enabled";
+
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
-  // Load categories and tasks from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setCategories(parsed);
-        }
+        if (Array.isArray(parsed)) setCategories(parsed);
       }
     } catch (error) {
       console.error("Error loading categories:", error);
-    } finally {
-      setLoaded(true);
     }
+
+    const savedDark = localStorage.getItem(DARK_MODE_KEY);
+    setDarkMode(savedDark === "true");
+
+    setLoaded(true);
   }, []);
 
-  // Save categories and tasks to localStorage whenever categories change
   useEffect(() => {
     if (loaded) {
       try {
@@ -36,7 +39,10 @@ export default function TodoPage() {
     }
   }, [categories, loaded]);
 
-  // Add a new category with empty tasks
+  useEffect(() => {
+    localStorage.setItem(DARK_MODE_KEY, darkMode);
+  }, [darkMode]);
+
   const addCategory = () => {
     const trimmed = newCategory.trim();
     if (trimmed && !categories.some((c) => c.name === trimmed)) {
@@ -45,7 +51,6 @@ export default function TodoPage() {
     }
   };
 
-  // Delete a category by index
   const deleteCategory = (index) => {
     const categoryToDelete = categories[index];
     const confirmDelete = confirm(`Delete category "${categoryToDelete.name}"?`);
@@ -56,7 +61,6 @@ export default function TodoPage() {
     }
   };
 
-  // Update tasks inside a category
   const updateCategoryTasks = (categoryName, newTasks) => {
     setCategories((prev) =>
       prev.map((cat) =>
@@ -65,13 +69,43 @@ export default function TodoPage() {
     );
   };
 
-  return (
-    <div className="min-h-screen bg-white">
-      <NavBar />
-      <div className="max-w-2xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4 text-blue-700">To Do App - By Devin</h1>
+  const renameCategory = (index, newName) => {
+    const updated = [...categories];
+    updated[index].name = newName;
+    setCategories(updated);
+  };
 
-        {/* Add Category */}
+  return (
+    <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"} min-h-screen transition-colors`}>
+      <NavBar />
+
+      {/* Toggle Switch UI */}
+      <div className="max-w-2xl mx-auto flex justify-end px-4 pt-6">
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${
+            darkMode ? "bg-blue-600" : "bg-gray-300"
+          }`}
+        >
+          <div
+            className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-300 ${
+              darkMode ? "translate-x-7" : ""
+            }`}
+          />
+        </button>
+      </div>
+
+      <div className="flex justify-center items-center ">
+       <div className="w-40 h-40">
+        <FloatingLottie/>
+       </div>
+      </div>
+      
+
+
+      <div className="max-w-2xl mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-500">To Do App - By Devin</h1>
+
         <div className="flex mb-6">
           <input
             type="text"
@@ -88,7 +122,6 @@ export default function TodoPage() {
           </button>
         </div>
 
-        {/* Wait until localStorage has loaded */}
         {!loaded ? (
           <p className="text-gray-500">Loading...</p>
         ) : categories.length === 0 ? (
@@ -101,6 +134,7 @@ export default function TodoPage() {
               tasks={category.tasks}
               onDelete={() => deleteCategory(index)}
               onTasksChange={(newTasks) => updateCategoryTasks(category.name, newTasks)}
+              onRename={(newName) => renameCategory(index, newName)}
             />
           ))
         )}
